@@ -45,15 +45,18 @@
       }
     },
     mounted () {
-      this.$folderDB.find({}, (err, list) => {
-        if (err) {
-          throw new Error(err)
-        }
-        console.log(list)
-        this.folderList = list
-      })
+      this.getFolder()
     },
     methods: {
+      getFolder () {
+        this.$folderDB.find({}, (err, list) => {
+          if (err) {
+            throw new Error(err)
+          }
+          console.log(list)
+          this.folderList = list
+        })
+      },
       addFolder () {
         remote.dialog.showOpenDialog({
           properties: ['openDirectory', 'multiSelections']
@@ -69,12 +72,13 @@
             }
             !isAdd && newPath.push({path: i})
           }
-          this.$folderDB.insert(newPath, (err, list) => {
-            if (err) {
-              throw new Error(err)
-            }
-            this.folderList = list
-          })
+          console.log(newPath)
+          // this.$folderDB.insert(newPath, (err, list) => {
+          //   if (err) {
+          //     throw new Error(err)
+          //   }
+          //   this.folderList = list
+          // })
         })
       },
       delFolder ({row}) {
