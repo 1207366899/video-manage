@@ -35,7 +35,7 @@
                     size: 'small'
                   },
                   on: {
-                    click: this.delFolder(params)
+                    click: () => this.delFolder(params)
                   }
                 }, '删除')
               ])
@@ -53,42 +53,49 @@
           if (err) {
             throw new Error(err)
           }
-          console.log(list)
           this.folderList = list
         })
       },
       addFolder () {
-        remote.dialog.showOpenDialog({
+        const {dialog} = remote
+        dialog.showOpenDialog({
           properties: ['openDirectory', 'multiSelections']
         }, folders => {
           if (!folders) return
           let newPath = []
+          let oldPath = []
           for (let i of folders) {
-            let isAdd = false
-            for (let j of this.folderList) {
-              if (i === j) {
-                isAdd = true
-              }
+            if (!this.folderList.find(item => item.path === i)) {
+              newPath.push({
+                path: i
+              })
+            } else {
+              oldPath.push(i)
             }
-            !isAdd && newPath.push({path: i})
           }
-          console.log(newPath)
-          // this.$folderDB.insert(newPath, (err, list) => {
-          //   if (err) {
-          //     throw new Error(err)
-          //   }
-          //   this.folderList = list
-          // })
+          if (oldPath.length) {
+            dialog.showMessageBox({
+              type: 'warning',
+              message: `文件夹 ${[...oldPath]} 已存在！`
+            })
+          }
+          if (!newPath.length) return
+          this.$folderDB.insert(newPath, (err, list) => {
+            if (err) {
+              throw new Error(err)
+            }
+            this.getFolder()
+          })
         })
       },
-      delFolder ({row}) {
+      delFolder (params) {
         this.$folderDB.remove({
-          _id: row._id
+          _id: params.row._id
         }, (err, list) => {
           if (err) {
             throw new Error(err)
           }
-          this.folderList = list
+          this.getFolder()
         })
       }
     }
