@@ -2,8 +2,8 @@
     <div class="add-folder">
         <header>
             <Icon type="md-arrow-back" size="24" style="float: left" @click="$router.push({name: 'VideoList'})"/>
-            <Icon type="md-wifi" size="24" @click="scanFile"/>
-            <Icon type="md-add" size="24" @click="addFolder"/>
+            <Icon type="md-wifi" size="24" @click="scanFile" title="扫描文件夹"/>
+            <Icon type="md-add" size="24" @click="addFolder" title="新增文件夹"/>
         </header>
         <main>
             <Table border :columns="columns" :data="folderList"></Table>
@@ -14,7 +14,7 @@
 <script>
   import fs from 'fs'
   import path from 'path'
-  import {remote} from 'electron'
+  const dialog = require('electron').remote.dialog
 
   export default {
     name: 'AddFolder',
@@ -58,7 +58,6 @@
         })
       },
       addFolder () {
-        const {dialog} = remote
         dialog.showOpenDialog({
           properties: ['openDirectory', 'multiSelections']
         }, folders => {
@@ -108,29 +107,45 @@
             birthtime: stats.birthtime
           }
           this.$videoDB.insert(fileObj, (err, res) => {
-            if (err) console.log(err)
+            if (err) {}
           })
         }
-        const readDir = dir => {
+        const readDir = (dir, cb) => {
           fs.readdir(dir, (err, files) => {
             if (err) throw new Error(err)
+            let count = 0
+            var checkEnd = () => {
+              ++count === files.length && cb()
+            }
             files.forEach(file => {
               const statPath = path.join(dir, file)
               fs.stat(statPath, (err, stats) => {
                 if (err) throw new Error(err)
                 if (stats.isFile()) {
                   saveFileInfo(file, stats)
+                  checkEnd()
                 } else if (stats.isDirectory()) {
-                  readDir(statPath)
+                  readDir(statPath, cb)
                 }
               })
             })
+            files.length === 0 && cb()
           })
         }
 
+        let taskList = []
         for (let i of this.folderList) {
-          readDir(i.path)
+          taskList.push(new Promise((resolve, reject) => {
+            readDir(i.path, () => resolve())
+          }))
         }
+        const startTime = new Date()
+        Promise.all(taskList).then(() => {
+          dialog.showMessageBox({
+            type: 'info',
+            message: `扫描完成，耗时 ${new Date() - startTime} ms`
+          })
+        })
       }
     }
   }
