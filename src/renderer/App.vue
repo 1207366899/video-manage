@@ -1,7 +1,7 @@
 <template>
-  <div id="app">
-    <router-view></router-view>
-  </div>
+    <div id="app">
+        <router-view></router-view>
+    </div>
 </template>
 
 <script>
@@ -11,23 +11,41 @@
 </script>
 
 <style lang="scss">
-  #app {
-    width: 100vw;
-    height: 100vh;
-    /*background: #c3d9ff;*/
-    padding: 20px;
+    #app {
+        display: flex;
+        width: 100vw;
+        height: 100vh;
+        background: #eeeeee;
 
-    header {
-      text-align: right;
-      margin-bottom: 20px;
+        header {
+            padding: 10px 20px;
+            height: 50px;
+            text-align: right;
+            background: #ffffff;
+            border-bottom: 1px solid #c3d9ff;
 
-      i {
-        cursor: pointer;
-      }
+            i {
+                cursor: pointer;
+            }
 
-      i + i {
-        margin-left: 20px;
-      }
+            i + i {
+                margin-left: 20px;
+            }
+        }
+
+        main {
+            padding: 20px;
+            height: calc(100% - 100px);
+        }
+
+        footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding-right: 20px;
+            height: 50px;
+            background: #ffffff;
+            border-top: 1px solid #c3d9ff;
+        }
     }
-  }
 </style>
