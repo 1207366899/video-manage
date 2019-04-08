@@ -80,7 +80,7 @@
             })
           }
           if (!newPath.length) return
-          this.$folderDB.insert(newPath, (err, list) => {
+          this.$folderDB.insert(newPath, err => {
             if (err) throw new Error(err)
             this.getFolder()
           })
@@ -89,7 +89,7 @@
       delFolder (params) {
         this.$folderDB.remove({
           _id: params.row._id
-        }, (err, list) => {
+        }, err => {
           if (err) throw new Error(err)
           this.getFolder()
         })
