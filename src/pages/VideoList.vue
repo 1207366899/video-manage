@@ -4,13 +4,13 @@
     <q-btn icon="west" label="返回" to="/" />
     {{ tableData }}
     <q-card v-for="item in tableData" :key="item._id">
-      <q-card-title>
-        {{ item.fileName }}
-      </q-card-title>
-      <q-card-separator />
-      <q-card-main>
-        Card Content
-      </q-card-main>
+      <q-card-section>
+        <div class="text-h6">{{ item.fileName }}</div>
+      </q-card-section>
+      <q-card-actions>
+        <q-btn flat>Action 1</q-btn>
+        <q-btn flat>Action 2</q-btn>
+      </q-card-actions>
     </q-card>
   </q-page>
 </template>
