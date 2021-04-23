@@ -2,7 +2,7 @@
   <q-page padding>
     <!-- content -->
 
-    <q-infinite-scroll @load="loadMore">
+    <q-infinite-scroll @load="loadMore" :offset="800">
       <div class="flex justify-around example-container">
         <q-card
           class="example-cell"
@@ -12,7 +12,7 @@
         >
           <img class="cover" :src="item.image" />
           <q-card-section>
-            <div class="text-h6">{{ item.name }}</div>
+            <div class="text-h6">{{ item.parentName }}</div>
           </q-card-section>
         </q-card>
       </div>
@@ -56,8 +56,9 @@
 
 <script>
 import fs from "fs";
-import path, { extname } from "path";
-const nodeCmd = require("node-cmd");
+import path from "path";
+import { resolve } from "dns";
+const childProcess = require("child_process");
 
 export default {
   // name: 'PageName',
@@ -77,9 +78,9 @@ export default {
   methods: {
     async init() {
       const vm = this;
-      this.$videoDB.count({ extName: ".png" }, function(err, count) {
+      this.$videoDB.count({ extName: ".jpg" }, function(err, count) {
         if (err) console.log(err);
-        console.log("count", count);
+        console.log(`初始化完成，共${count}条数据`);
         let randomList = [];
         for (var i = 0; i < count; i++) {
           randomList[i] = i;
@@ -91,31 +92,40 @@ export default {
       });
     },
     loadMore(index, done) {
-      this.current = index;
       this.getData();
       done();
     },
-    getData(filters) {
-      const param = {
-        extName: ".png"
-      };
-      const skipNum = this.randomList[this.tableData.length];
-      if (skipNum === undefined) return;
-      // 查询分页
-      this.$videoDB
-        .findOne(param)
-        .skip(skipNum)
-        .limit(1)
-        .exec((err, item) => {
-          if (err) throw new Error(err);
-          const bData = fs.readFileSync(item.path);
-          const base64Str = bData.toString("base64");
-          const datauri = "data:image/png;base64," + base64Str;
-          this.tableData.push({
-            ...item,
-            image: datauri
-          });
+    async getData() {
+      let list = [];
+      const fetchList = index => {
+        return new Promise(resolve => {
+          const skipNum = this.randomList[this.tableData.length + index];
+          if (skipNum === undefined) return;
+          // 查询分页
+          this.$videoDB
+            .findOne({
+              extName: ".jpg"
+            })
+            .skip(skipNum)
+            .limit(1)
+            .exec((err, item) => {
+              if (err) throw new Error(err);
+              const bData = fs.readFileSync(item.path);
+              const base64Str = bData.toString("base64");
+              const datauri = "data:image/png;base64," + base64Str;
+              list.push({
+                ...item,
+                image: datauri
+              });
+              resolve();
+            });
         });
+      };
+
+      for (let i = 0; i < 20; i++) {
+        await fetchList(i);
+      }
+      this.tableData = this.tableData.concat(list);
     },
     async handleClick(img) {
       const list = await fs.promises.readdir(img.parentPath);
@@ -140,7 +150,7 @@ export default {
           ".mov",
           ".m4v"
         ];
-        const imageExt = [".png"];
+        const imageExt = [".jpg"];
         const type =
           videoExt.indexOf(extName) !== -1
             ? "video"
@@ -169,6 +179,7 @@ export default {
       this.visible = true;
     },
     openFile(item) {
+      childProcess.exec(`"${item.path}"`);
       if (item.type === "video") {
         this.$historyDB.insert(
           {
@@ -181,8 +192,8 @@ export default {
             }
           }
         );
+        this.visible = false;
       }
-      nodeCmd.run(item.path);
     }
   }
 };
@@ -204,7 +215,7 @@ $x: 4
   // height: 700px
 
   .example-cell
-    width: 22%
+    width: 800px
     margin-bottom: 20px
     // margin: 10px
     // padding: 1px

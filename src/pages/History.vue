@@ -8,11 +8,7 @@
         :key="index"
         @click="openFile(item)"
       >
-        <q-item-section avatar>
-          <q-avatar>
-            <img :src="item.image" />
-          </q-avatar>
-        </q-item-section>
+        <img :src="item.image" />
         <q-item-section>{{ item.name }}</q-item-section>
 
         <q-item-section side top>
@@ -24,7 +20,7 @@
 </template>
 <script>
 import fs from "fs";
-const nodeCmd = require("node-cmd");
+const childProcess = require("child_process");
 
 export default {
   data() {
@@ -40,6 +36,7 @@ export default {
       this.$historyDB
         .find()
         .sort({ accessTime: -1 })
+        .limit(10)
         .exec((err, list) => {
           if (err) throw new Error(err);
           console.log(list);
@@ -55,7 +52,7 @@ export default {
         });
     },
     openFile(item) {
-      nodeCmd.run(item.path);
+      childProcess.exec(`"${item.path}"`);
     }
   }
 };
