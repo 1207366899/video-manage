@@ -45,7 +45,6 @@ export default {
     getFolder() {
       this.$folderDB.find({}, (err, list) => {
         if (err) throw new Error(err);
-        console.log("list", list);
         this.folderList = list;
       });
     },
@@ -56,27 +55,16 @@ export default {
         })
         .then(({ filePaths }) => {
           if (!filePaths) return;
-          let newPath = [];
-          let oldPath = [];
-          for (let i of filePaths) {
-            if (!this.folderList.find(item => item.path === i)) {
-              newPath.push({
-                path: i
-              });
-            } else {
-              oldPath.push(i);
+          const list = filePaths.map(item => {
+            return {
+              path: item
+            };
+          });
+          this.$folderDB.insert(list, err => {
+            if (err) {
+              console.log(err);
+              return;
             }
-          }
-          if (oldPath.length) {
-            dialog.showMessageBox({
-              type: "warning",
-              message: `文件夹 ${[...oldPath]} 已存在！`
-            });
-          }
-          if (!newPath.length) return;
-          console.log("folderDB", this.$folderDB);
-          this.$folderDB.insert(newPath, err => {
-            if (err) throw new Error(err);
             this.getFolder();
           });
         })

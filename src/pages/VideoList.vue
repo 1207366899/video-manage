@@ -141,21 +141,47 @@ export default {
           ".m4v"
         ];
         const imageExt = [".png"];
-        const icon =
+        const type =
           videoExt.indexOf(extName) !== -1
-            ? "play_circle"
+            ? "video"
             : imageExt.indexOf(extName) !== -1
-            ? "photo"
-            : "insert_drive_file";
-        return {
-          icon,
-          name: item,
+            ? "image"
+            : "other";
+        let res = {
+          type,
+          name: item.replace(extName, ""),
           path: `${img.parentPath}\\${item}`
         };
+        switch (type) {
+          case "video":
+            res.icon = "play_circle";
+            res.cover = img.path;
+            break;
+          case "image":
+            res.icon = "photo";
+            break;
+          default:
+            res.icon = "insert_drive_file";
+            break;
+        }
+        return res;
       });
       this.visible = true;
     },
     openFile(item) {
+      if (item.type === "video") {
+        this.$historyDB.insert(
+          {
+            ...item,
+            accessTime: new Date().toLocaleString()
+          },
+          (err, res) => {
+            if (err) {
+              throw new Error(err);
+            }
+          }
+        );
+      }
       nodeCmd.run(item.path);
     }
   }
