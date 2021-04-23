@@ -1,9 +1,6 @@
 <template>
   <q-page padding>
     <!-- content -->
-    <!-- <q-icon name="west" /> -->
-
-    <q-btn icon="west" label="返回" to="/" />
     <q-btn color="primary" label="新增" @click="addFolder" />
     <q-btn color="primary" label="扫描" @click="scanFile" />
     <q-table
@@ -37,47 +34,9 @@ export default {
         label: "操作",
         name: "action",
         field: "action"
-        // width: 120,
-        // render: (h, params) => {
-        //   return h("div", [
-        //     h(
-        //       "Button",
-        //       {
-        //         props: {
-        //           type: "error",
-        //           size: "small"
-        //         },
-        //         on: {
-        //           click: () => this.delFolder(params)
-        //         }
-        //       },
-        //       "删除"
-        //     )
-        //   ]);
-        // }
       }
-      // {
-      //   name: "desc",
-      //   required: true,
-      //   label: "Dessert (100g serving)",
-      //   align: "left",
-      //   field: "name",
-      //   sortable: true
-      // }
     ],
-    folderList: [
-      // {
-      //   name: "Frozen Yogurt",
-      //   calories: 159,
-      //   fat: 6.0,
-      //   carbs: 24,
-      //   protein: 4.0,
-      //   sodium: 87,
-      //   calcium: "14%",
-      //   iron: "1%",
-      //   path: "aaaaaaaaaaaaaaaaa"
-      // }
-    ]
+    folderList: []
   }),
   mounted() {
     this.getFolder();
@@ -97,7 +56,6 @@ export default {
         })
         .then(({ filePaths }) => {
           if (!filePaths) return;
-          // console.log("folders", folders);
           let newPath = [];
           let oldPath = [];
           for (let i of filePaths) {
@@ -138,60 +96,111 @@ export default {
       );
     },
     // 遍历文件目录
-    scanFile() {
-      const saveFileInfo = (file, stats) => {
-        let fileObj = {
-          fileName: file,
-          fileType: file.substr(file.lastIndexOf(".") + 1),
-          fileSize: stats.size / 1024 / 1024 / 1024, // GB
-          fileCover: "",
-          atime: stats.atime,
-          mtime: stats.mtime,
-          birthtime: stats.birthtime
-        };
-        this.$videoDB.insert(fileObj, (err, res) => {
-          if (err) {
-            throw new Error(err);
-          }
-        });
-      };
-      const readDir = (dir, cb) => {
-        fs.readdir(dir, (err, files) => {
-          if (err) throw new Error(err);
-          let count = 0;
-          var checkEnd = () => {
-            ++count === files.length && cb();
-          };
-          files.forEach(file => {
-            const statPath = path.join(dir, file);
-            fs.stat(statPath, (err, stats) => {
-              if (err) throw new Error(err);
-              if (stats.isFile()) {
-                saveFileInfo(file, stats);
-                checkEnd();
-              } else if (stats.isDirectory()) {
-                readDir(statPath, cb);
+    async scanFile() {
+      const videoDB = this.$videoDB;
+      videoDB.remove({}, { multi: true }, function(err, numRemoved) {
+        console.log(err, numRemoved);
+      });
+      async function loopDir(dir, parent, parentPath) {
+        try {
+          const stat = await fs.promises.stat(dir);
+          if (stat.isDirectory()) {
+            const dirList = await fs.promises.readdir(dir);
+            for (const item of dirList) {
+              const floderPath = path.resolve(dir, item);
+              loopDir(floderPath, stat, dir);
+            }
+          } else if (stat.isFile()) {
+            const basename = path.basename(dir);
+            const extname = path.extname(basename);
+            let file = {
+              name: basename.replace(extname, ""),
+              extName: extname,
+              path: dir,
+              accessTime: new Date(stat.atime).toLocaleString(),
+              modifyTime: new Date(stat.mtime).toLocaleString(),
+              birthTime: new Date(stat.birthtime).toLocaleString()
+            };
+            if (parent && parentPath) {
+              file = {
+                ...file,
+                parentPath,
+                parentName: path.basename(parentPath),
+                parentSize: parent.size / 1024 / 1024 / 1024
+              };
+            }
+            videoDB.insert(file, (err, res) => {
+              if (err) {
+                throw new Error(err);
               }
             });
-          });
-          files.length === 0 && cb();
-        });
-      };
-      let taskList = [];
-      for (let i of this.folderList) {
-        taskList.push(
-          new Promise((resolve, reject) => {
-            readDir(i.path, () => resolve());
-          })
-        );
+          }
+        } catch (error) {
+          console.log(error);
+        }
       }
       const startTime = new Date();
-      Promise.all(taskList).then(() => {
-        dialog.showMessageBox({
-          type: "info",
-          message: `扫描完成，耗时 ${new Date() - startTime} ms`
-        });
+      await Promise.all(
+        this.folderList.map(async item => await loopDir(item.path))
+      );
+      dialog.showMessageBox({
+        type: "info",
+        message: `扫描完成，耗时 ${new Date() - startTime} ms`
       });
+
+      // const saveFileInfo = (file, stats) => {
+      //   let fileObj = {
+      //     fileName: file,
+      //     fileType: file.substr(file.lastIndexOf(".") + 1),
+      //     fileSize: stats.size / 1024 / 1024 / 1024, // GB
+      //     fileCover: "",
+      //     atime: stats.atime,
+      //     mtime: stats.mtime,
+      //     birthtime: stats.birthtime
+      //   };
+      //   this.$videoDB.insert(fileObj, (err, res) => {
+      //     if (err) {
+      //       throw new Error(err);
+      //     }
+      //   });
+      // };
+      // const readDir = (dir, cb) => {
+      //   fs.readdir(dir, (err, files) => {
+      //     if (err) throw new Error(err);
+      //     let count = 0;
+      //     var checkEnd = () => {
+      //       ++count === files.length && cb();
+      //     };
+      //     files.forEach(file => {
+      //       const statPath = path.join(dir, file);
+      //       fs.stat(statPath, (err, stats) => {
+      //         if (err) throw new Error(err);
+      //         if (stats.isFile()) {
+      //           saveFileInfo(file, stats);
+      //           checkEnd();
+      //         } else if (stats.isDirectory()) {
+      //           readDir(statPath, cb);
+      //         }
+      //       });
+      //     });
+      //     files.length === 0 && cb();
+      //   });
+      // };
+      // let taskList = [];
+      // for (let i of this.folderList) {
+      //   taskList.push(
+      //     new Promise((resolve, reject) => {
+      //       readDir(i.path, () => resolve());
+      //     })
+      //   );
+      // }
+      // const startTime = new Date();
+      // Promise.all(taskList).then(() => {
+      //   dialog.showMessageBox({
+      //     type: "info",
+      //     message: `扫描完成，耗时 ${new Date() - startTime} ms`
+      //   });
+      // });
     }
   }
 };

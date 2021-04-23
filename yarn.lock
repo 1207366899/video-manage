@@ -5960,6 +5960,11 @@ no-case@^3.0.4:
     lower-case "^2.0.2"
     tslib "^2.0.3"
 
+node-cmd@^4.0.0:
+  version "4.0.0"
+  resolved "http://sdata.synology.me:44873/node-cmd/-/node-cmd-4.0.0.tgz#a0187d9b779b59f1e8a70545ab8e8276a4b8c693"
+  integrity sha1-oBh9m3ebWfHopwVFq46CdqS4xpM=
+
 node-forge@^0.10.0:
   version "0.10.0"
   resolved "https://registry.npm.taobao.org/node-forge/download/node-forge-0.10.0.tgz#32dea2afb3e9926f02ee5ce8794902691a676bf3"
