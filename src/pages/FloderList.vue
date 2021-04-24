@@ -128,9 +128,13 @@ export default {
         }
       }
       const startTime = new Date();
-      await Promise.all(
-        this.folderList.map(async item => await loopDir(item.path))
-      );
+      try {
+        await Promise.all(
+          this.folderList.map(async item => await loopDir(item.path))
+        );
+      } catch (error) {
+        console.log(error);
+      }
       videoDB.insert(fileList, (err, res) => {
         if (err) {
           throw new Error(err);

@@ -171,6 +171,11 @@ module.exports = function(/* ctx */) {
         // protocol: 'myapp://path',
         // Windows only
         // win32metadata: { ... }
+        download: {
+          mirrorOptions: {
+            mirror: "https://npm.taobao.org/mirrors/electron/"
+          }
+        }
       },
 
       builder: {

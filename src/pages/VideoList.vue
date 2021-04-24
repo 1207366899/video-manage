@@ -57,7 +57,6 @@
 <script>
 import fs from "fs";
 import path from "path";
-import { resolve } from "dns";
 const childProcess = require("child_process");
 
 export default {
@@ -72,11 +71,11 @@ export default {
       visible: false
     };
   },
-  async mounted() {
+  mounted() {
     this.init();
   },
   methods: {
-    async init() {
+    init() {
       const vm = this;
       this.$videoDB.count({ extName: ".jpg" }, function(err, count) {
         if (err) console.log(err);
@@ -122,61 +121,69 @@ export default {
         });
       };
 
-      for (let i = 0; i < 20; i++) {
-        await fetchList(i);
+      try {
+        for (let i = 0; i < 20; i++) {
+          await fetchList(i);
+        }
+      } catch (error) {
+        console.log(error);
       }
       this.tableData = this.tableData.concat(list);
     },
     async handleClick(img) {
-      const list = await fs.promises.readdir(img.parentPath);
-      this.fileList = list.map(item => {
-        const extName = path.extname(item);
-        const videoExt = [
-          ".avi",
-          ".dat",
-          ".mkv",
-          ".flv",
-          ".vob",
-          ".wmv",
-          ".asf",
-          ".asx",
-          ".rm",
-          ".rmvb",
-          ".mpg",
-          ".mpeg",
-          ".mpe",
-          ".3gp",
-          ".mp4",
-          ".mov",
-          ".m4v"
-        ];
-        const imageExt = [".jpg"];
-        const type =
-          videoExt.indexOf(extName) !== -1
-            ? "video"
-            : imageExt.indexOf(extName) !== -1
-            ? "image"
-            : "other";
-        let res = {
-          type,
-          name: item.replace(extName, ""),
-          path: `${img.parentPath}\\${item}`
-        };
-        switch (type) {
-          case "video":
-            res.icon = "play_circle";
-            res.cover = img.path;
-            break;
-          case "image":
-            res.icon = "photo";
-            break;
-          default:
-            res.icon = "insert_drive_file";
-            break;
-        }
-        return res;
-      });
-      this.visible = true;
+      try {
+        const list = await fs.promises.readdir(img.parentPath);
+        this.fileList = list.map(item => {
+          const extName = path.extname(item);
+          const videoExt = [
+            ".avi",
+            ".dat",
+            ".mkv",
+            ".flv",
+            ".vob",
+            ".wmv",
+            ".asf",
+            ".asx",
+            ".rm",
+            ".rmvb",
+            ".mpg",
+            ".mpeg",
+            ".mpe",
+            ".3gp",
+            ".mp4",
+            ".mov",
+            ".m4v"
+          ];
+          const imageExt = [".jpg"];
+          const type =
+            videoExt.indexOf(extName) !== -1
+              ? "video"
+              : imageExt.indexOf(extName) !== -1
+              ? "image"
+              : "other";
+          let res = {
+            type,
+            name: item.replace(extName, ""),
+            path: `${img.parentPath}\\${item}`
+          };
+          switch (type) {
+            case "video":
+              res.icon = "play_circle";
+              res.cover = img.path;
+              break;
+            case "image":
+              res.icon = "photo";
+              break;
+            default:
+              res.icon = "insert_drive_file";
+              break;
+          }
+          return res;
+        });
+        this.visible = true;
+      } catch (error) {
+        console.log(error);
+      }
     },
     openFile(item) {
       childProcess.exec(`"${item.path}"`);
