@@ -47,6 +47,10 @@
 
 <script>
 // import EssentialLink from "components/EssentialLink.vue";
+import { ipcRenderer } from "electron";
+ipcRenderer.on("update-reply", (event, arg) => {
+  alert(arg);
+});
 
 const linksData = [
   {

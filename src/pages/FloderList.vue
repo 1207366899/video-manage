@@ -19,11 +19,17 @@
 <script>
 import fs from "fs";
 import path from "path";
-import { exec } from "child_process";
-import { remote } from "electron";
+// import { exec } from "child_process";
+import { ipcRenderer, remote } from "electron";
 const { dialog } = remote;
-// const { exec } = require("child_process");
-// const dialog = require("electron").remote.dialog;
+
+// const { ipcRenderer } = require("electron");
+// console.log(ipcRenderer.sendSync("synchronous-message", "ping")); // prints "pong"
+
+// ipcRenderer.on("asynchronous-reply", (event, arg) => {
+//   console.log(arg); // prints "pong"
+// });
+// ipcRenderer.send("asynchronous-message", "ping");
 
 export default {
   data: () => ({
@@ -154,6 +160,7 @@ export default {
             `插入完成，共${fileList.length}条，耗时 ${new Date() -
               startTime} ms`
           );
+          ipcRenderer.send("update-data");
         });
       } catch (error) {
         console.log(error);

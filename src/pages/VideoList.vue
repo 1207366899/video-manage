@@ -11,8 +11,11 @@
           @click="handleClick(item)"
         >
           <img class="cover" :src="item.image" />
-          <q-card-section>
+          <q-card-section class="flex justify-between items-center">
             <div class="text-h6">{{ item.parentName }}</div>
+            <div class="text-grey" v-show="item.parentSize">
+              {{ (item.parentSize / 1024 / 1024).toFixed(2) + "Mb" }}
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -57,7 +60,7 @@
 <script>
 import fs from "fs";
 import path from "path";
-const childProcess = require("child_process");
+import { exec } from "child_process";
 
 export default {
   // name: 'PageName',
@@ -194,7 +197,7 @@ export default {
       }
     },
     openFile(item) {
-      childProcess.exec(`"${item.path}"`);
+      exec(`"${item.path}"`);
       if (item.type === "video") {
         this.$db.history.insert(
           {
