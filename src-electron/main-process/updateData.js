@@ -3,6 +3,7 @@ import { exec } from "child_process";
 
 const video = global.db.video;
 ipcMain.on("update-data", (event, arg) => {
+  const start = new Date();
   video
     .find({ $or: [{ extName: ".jpg" }, { extName: ".png" }] })
     .exec(async (err, list) => {
@@ -35,6 +36,9 @@ ipcMain.on("update-data", (event, arg) => {
         })
       );
 
-      event.reply("update-reply", "更新文件夹大小成功！");
+      event.reply(
+        "update-reply",
+        `更新文件夹大小成功！ 耗时${new Date() - start}ms`
+      );
     });
 });
