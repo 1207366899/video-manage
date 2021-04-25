@@ -77,34 +77,36 @@ export default {
   methods: {
     init() {
       const vm = this;
-      this.$videoDB.count({ extName: ".jpg" }, function(err, count) {
-        if (err) console.log(err);
-        console.log(`初始化完成，共${count}条数据`);
-        let randomList = [];
-        for (var i = 0; i < count; i++) {
-          randomList[i] = i;
+      this.$db.video.count(
+        { $or: [{ extName: ".jpg" }, { extName: ".png" }] },
+        function(err, count) {
+          if (err) console.log(err);
+          console.log(`初始化完成，共${count}条数据`);
+          let randomList = [];
+          for (var i = 0; i < count; i++) {
+            randomList[i] = i;
+          }
+          randomList.sort(() => {
+            return 0.5 - Math.random();
+          });
+          vm.randomList = randomList;
         }
-        randomList.sort(() => {
-          return 0.5 - Math.random();
-        });
-        vm.randomList = randomList;
-      });
+      );
     },
     loadMore(index, done) {
       this.getData();
       done();
     },
     async getData() {
+      if (this.tableData.length === this.randomList.length) return;
       let list = [];
       const fetchList = index => {
-        return new Promise(resolve => {
-          const skipNum = this.randomList[this.tableData.length + index];
-          if (skipNum === undefined) return;
+        return new Promise((resolve, reject) => {
+          const skipNum = this.randomList[index];
+          if (skipNum === undefined) reject(new Error("不能为空！"));
           // 查询分页
-          this.$videoDB
-            .findOne({
-              extName: ".jpg"
-            })
+          this.$db.video
+            .findOne({ $or: [{ extName: ".jpg" }, { extName: ".png" }] })
             .skip(skipNum)
             .limit(1)
             .exec((err, item) => {
@@ -112,21 +114,27 @@ export default {
               const bData = fs.readFileSync(item.path);
               const base64Str = bData.toString("base64");
               const datauri = "data:image/png;base64," + base64Str;
-              list.push({
+              resolve({
                 ...item,
                 image: datauri
               });
-              resolve();
             });
         });
       };
 
-      try {
-        for (let i = 0; i < 20; i++) {
-          await fetchList(i);
+      for (let i = 0; i < 20; i++) {
+        try {
+          const current = this.tableData.length + i;
+          if (current >= this.randomList.length) {
+            alert("END!");
+            break;
+          }
+          const item = await fetchList(current);
+          list.push(item);
+        } catch (error) {
+          console.log(error);
+          break;
         }
-      } catch (error) {
-        console.log(error);
       }
       this.tableData = this.tableData.concat(list);
     },
@@ -188,7 +196,7 @@ export default {
     openFile(item) {
       childProcess.exec(`"${item.path}"`);
       if (item.type === "video") {
-        this.$historyDB.insert(
+        this.$db.history.insert(
           {
             ...item,
             accessTime: new Date().toLocaleString()

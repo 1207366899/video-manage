@@ -33,13 +33,13 @@ export default {
   },
   methods: {
     init() {
-      this.$historyDB
+      this.$db.history
         .find()
         .sort({ accessTime: -1 })
         .limit(10)
         .exec((err, list) => {
           if (err) throw new Error(err);
-          console.log(list);
+          // console.log(list);
           this.historyList = list.map(item => {
             const bData = fs.readFileSync(item.cover);
             const base64Str = bData.toString("base64");
