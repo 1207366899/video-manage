@@ -1,60 +1,76 @@
 <template>
-  <q-page padding>
-    <!-- content -->
+  <q-layout view="lHh Lpr lFf">
+    <q-header elevated>
+      <q-toolbar>
+        <q-btn icon="home" to="/" />
+        <q-toolbar-title> </q-toolbar-title>
+        <q-select
+          style="width: 200px"
+          clearable
+          v-model="model"
+          :options="options"
+          @input="floderChange"
+        />
+      </q-toolbar>
+    </q-header>
+    <q-page-container>
+      <q-page padding>
+        <q-infinite-scroll @load="loadMore" :offset="800">
+          <div class="flex justify-around example-container">
+            <q-card
+              class="example-cell"
+              v-for="(item, index) in tableData"
+              :key="index"
+              @click="handleClick(item)"
+            >
+              <img class="cover" :src="item.image" />
+              <q-card-section class="flex justify-between items-center">
+                <div class="text-h6">{{ item.parentName }}</div>
+                <div class="text-grey" v-show="item.parentSize">
+                  {{ (item.parentSize / 1024 / 1024).toFixed(2) + "Mb" }}
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
 
-    <q-infinite-scroll @load="loadMore" :offset="800">
-      <div class="flex justify-around example-container">
-        <q-card
-          class="example-cell"
-          v-for="(item, index) in tableData"
-          :key="index"
-          @click="handleClick(item)"
-        >
-          <img class="cover" :src="item.image" />
-          <q-card-section class="flex justify-between items-center">
-            <div class="text-h6">{{ item.parentName }}</div>
-            <div class="text-grey" v-show="item.parentSize">
-              {{ (item.parentSize / 1024 / 1024).toFixed(2) + "Mb" }}
+          <template v-slot:loading>
+            <div class="row justify-center q-my-md">
+              <q-spinner-dots color="primary" size="40px" />
             </div>
-          </q-card-section>
-        </q-card>
-      </div>
+          </template>
+        </q-infinite-scroll>
 
-      <template v-slot:loading>
-        <div class="row justify-center q-my-md">
-          <q-spinner-dots color="primary" size="40px" />
-        </div>
-      </template>
-    </q-infinite-scroll>
-    <q-dialog v-model="visible">
-      <div class="q-pa-md" style="background: #fff">
-        <q-list bordered>
-          <q-item
-            clickable
-            v-ripple
-            v-for="(item, index) in fileList"
-            :key="index"
-            @click="openFile(item)"
-          >
-            <q-item-section avatar>
-              <q-icon
-                :color="
-                  item.icon === 'play_circle'
-                    ? 'primary'
-                    : item.icon === 'photo'
-                    ? 'secondary'
-                    : 'tertiary'
-                "
-                :name="item.icon"
-              />
-            </q-item-section>
+        <q-dialog v-model="visible">
+          <div class="q-pa-md" style="background: #fff">
+            <q-list bordered>
+              <q-item
+                clickable
+                v-ripple
+                v-for="(item, index) in fileList"
+                :key="index"
+                @click="openFile(item)"
+              >
+                <q-item-section avatar>
+                  <q-icon
+                    :color="
+                      item.icon === 'play_circle'
+                        ? 'primary'
+                        : item.icon === 'photo'
+                        ? 'secondary'
+                        : 'tertiary'
+                    "
+                    :name="item.icon"
+                  />
+                </q-item-section>
 
-            <q-item-section>{{ item.name }}</q-item-section>
-          </q-item>
-        </q-list>
-      </div>
-    </q-dialog>
-  </q-page>
+                <q-item-section>{{ item.name }}</q-item-section>
+              </q-item>
+            </q-list>
+          </div>
+        </q-dialog>
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
 
 <script>
@@ -66,12 +82,13 @@ export default {
   // name: 'PageName',
   data() {
     return {
-      current: 1,
-      pageSize: 10,
       tableData: [],
       fileList: [],
       randomList: [],
-      visible: false
+      visible: false,
+      model: undefined,
+      options: [],
+      param: { $or: [{ extName: ".jpg" }, { extName: ".png" }] }
     };
   },
   mounted() {
@@ -79,22 +96,44 @@ export default {
   },
   methods: {
     init() {
+      this.$db.floder.find({}, (err, list) => {
+        if (err) throw new Error(err);
+        this.options = list.map(item => {
+          return {
+            label: path.basename(item.path),
+            value: item.path
+          };
+        });
+      });
+      this.getRandom();
+    },
+    getRandom() {
       const vm = this;
-      this.$db.video.count(
-        { $or: [{ extName: ".jpg" }, { extName: ".png" }] },
-        function(err, count) {
-          if (err) console.log(err);
-          console.log(`初始化完成，共${count}条数据`);
-          let randomList = [];
-          for (var i = 0; i < count; i++) {
-            randomList[i] = i;
-          }
-          randomList.sort(() => {
-            return 0.5 - Math.random();
-          });
-          vm.randomList = randomList;
+      this.$db.video.count(this.param, function(err, count) {
+        if (err) console.log(err);
+        console.log(`初始化完成，共${count}条数据`);
+        let randomList = [];
+        for (var i = 0; i < count; i++) {
+          randomList[i] = i;
         }
-      );
+        randomList.sort(() => {
+          return 0.5 - Math.random();
+        });
+        vm.randomList = randomList;
+        vm.getData();
+      });
+    },
+    floderChange(obj) {
+      if (obj) {
+        this.param = {
+          ...this.param,
+          parentPath: obj.value
+        };
+      } else {
+        delete this.param.parentPath;
+      }
+      this.tableData = [];
+      this.getRandom();
     },
     loadMore(index, done) {
       this.getData();
@@ -109,11 +148,12 @@ export default {
           if (skipNum === undefined) reject(new Error("不能为空！"));
           // 查询分页
           this.$db.video
-            .findOne({ $or: [{ extName: ".jpg" }, { extName: ".png" }] })
+            .findOne(this.param)
             .skip(skipNum)
             .limit(1)
             .exec((err, item) => {
               if (err) throw new Error(err);
+              if (!item) return;
               const bData = fs.readFileSync(item.path);
               const base64Str = bData.toString("base64");
               const datauri = "data:image/png;base64," + base64Str;
@@ -129,7 +169,10 @@ export default {
         try {
           const current = this.tableData.length + i;
           if (current >= this.randomList.length) {
-            alert("END!");
+            this.$q.notify({
+              type: "warning",
+              message: "END！"
+            });
             break;
           }
           const item = await fetchList(current);

@@ -5,11 +5,10 @@ const routes = [
     children: [
       { path: "", component: () => import("pages/Index.vue") },
       { path: "/floder", component: () => import("pages/FloderList.vue") },
-      { path: "/video", component: () => import("pages/VideoList.vue") },
       { path: "/history", component: () => import("pages/History.vue") }
     ]
   },
-
+  { path: "/video", component: () => import("pages/VideoList.vue") },
   // Always leave this as last one,
   // but you can also remove it
   {

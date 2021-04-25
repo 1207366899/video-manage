@@ -156,10 +156,11 @@ export default {
           if (err) {
             throw new Error(err);
           }
-          alert(
-            `插入完成，共${fileList.length}条，耗时 ${new Date() -
+          this.$q.notify({
+            type: "positive",
+            message: `插入完成，共${fileList.length}条，耗时 ${new Date() -
               startTime} ms`
-          );
+          });
           ipcRenderer.send("update-data");
         });
       } catch (error) {
