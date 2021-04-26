@@ -38,6 +38,12 @@
               <q-spinner-dots color="primary" size="40px" />
             </div>
           </template>
+          <div
+            class="text-center"
+            v-show="tableData.length === randomList.length"
+          >
+            END！
+          </div>
         </q-infinite-scroll>
 
         <q-dialog v-model="visible">
@@ -169,10 +175,10 @@ export default {
         try {
           const current = this.tableData.length + i;
           if (current >= this.randomList.length) {
-            this.$q.notify({
-              type: "warning",
-              message: "END！"
-            });
+            // this.$q.notify({
+            //   type: "warning",
+            //   message: "END！"
+            // });
             break;
           }
           const item = await fetchList(current);

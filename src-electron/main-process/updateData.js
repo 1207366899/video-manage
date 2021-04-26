@@ -7,8 +7,10 @@ ipcMain.on("update-data", (event, arg) => {
   video
     .find({ $or: [{ extName: ".jpg" }, { extName: ".png" }] })
     .exec(async (err, list) => {
+      const unSizedList = list.filter(item => !item.parentSize);
+
       await Promise.all(
-        list.map(async item => {
+        unSizedList.map(async item => {
           return new Promise(async resolve => {
             const parentSize = await new Promise(resolve => {
               exec(
@@ -36,9 +38,13 @@ ipcMain.on("update-data", (event, arg) => {
         })
       );
 
-      event.reply(
-        "update-reply",
-        `更新文件夹大小成功！ 耗时${new Date() - start}ms`
-      );
+      unSizedList.length &&
+        event.reply(
+          "update-reply",
+          `更新文件夹大小成功！
+        共${unSizedList.length}条，耗时${((new Date() - start) / 1000).toFixed(
+            2
+          )}s`
+        );
     });
 });
