@@ -50,7 +50,7 @@
 import { ipcRenderer } from "electron";
 import { Notify } from "quasar";
 
-ipcRenderer.on("update-reply", (event, arg) => {
+ipcRenderer.on("scan-reply", (event, arg) => {
   Notify.create({
     type: "positive",
     message: arg

@@ -40,4 +40,4 @@ app.whenReady().then(() => {
 
 import "./electron-main";
 import "./database";
-import "./updateData";
+import "./service";

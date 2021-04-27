@@ -21,13 +21,36 @@
               class="example-cell"
               v-for="(item, index) in tableData"
               :key="index"
-              @click="handleClick(item)"
             >
-              <img class="cover" :src="item.image" />
+              <img class="cover" :src="item.image" @click="handleClick(item)" />
               <q-card-section class="flex justify-between items-center">
                 <div class="text-h6">{{ item.parentName }}</div>
                 <div class="text-grey" v-show="item.parentSize">
-                  {{ (item.parentSize / 1024 / 1024).toFixed(2) + "Mb" }}
+                  <q-btn
+                    v-show="!isNew(item)"
+                    flat
+                    round
+                    :color="isFavorite(item) ? 'red' : 'grey'"
+                    icon="favorite"
+                    @click="moveFloder(item, 'favorite')"
+                  />
+                  <q-btn
+                    v-show="isNew(item)"
+                    flat
+                    round
+                    icon="thumb_up"
+                    color="primary"
+                    @click="moveFloder(item, 'thumb_up')"
+                  />
+                  <q-btn
+                    v-show="isNew(item)"
+                    flat
+                    round
+                    icon="thumb_down"
+                    color="secondary"
+                    @click="moveFloder(item, 'thumb_down')"
+                  />
+                  {{ (item.parentSize / 1024 / 1024 / 1024).toFixed(2) + "Gb" }}
                 </div>
               </q-card-section>
             </q-card>
@@ -45,6 +68,10 @@
             END！
           </div>
         </q-infinite-scroll>
+
+        <q-inner-loading :showing="loading">
+          <q-spinner-gears size="50px" color="primary" />
+        </q-inner-loading>
 
         <q-dialog v-model="visible">
           <div class="q-pa-md" style="background: #fff">
@@ -83,6 +110,7 @@
 import fs from "fs";
 import path from "path";
 import { exec } from "child_process";
+// import { ipcRenderer } from "electron";
 
 export default {
   // name: 'PageName',
@@ -92,11 +120,13 @@ export default {
       fileList: [],
       randomList: [],
       visible: false,
+      loading: false,
       model: undefined,
       options: [],
       param: { $or: [{ extName: ".jpg" }, { extName: ".png" }] }
     };
   },
+  computed: {},
   mounted() {
     this.init();
   },
@@ -175,10 +205,6 @@ export default {
         try {
           const current = this.tableData.length + i;
           if (current >= this.randomList.length) {
-            // this.$q.notify({
-            //   type: "warning",
-            //   message: "END！"
-            // });
             break;
           }
           const item = await fetchList(current);
@@ -189,6 +215,7 @@ export default {
         }
       }
       this.tableData = this.tableData.concat(list);
+      console.log(this.tableData);
     },
     async handleClick(img) {
       try {
@@ -260,6 +287,94 @@ export default {
           }
         );
         this.visible = false;
+      }
+    },
+    isFavorite(item) {
+      return item.path.indexOf("avorite") !== -1;
+    },
+    isNew(item) {
+      return item.path.indexOf("new") !== -1;
+    },
+    async moveFloder(item, type) {
+      this.loading = true;
+      try {
+        const list = await new Promise(resolve => {
+          this.$db.floder.find({}).exec((err, list) => {
+            if (err) throw new Error(err);
+            resolve(list);
+          });
+        });
+        const defaultPath = list.filter(
+          item => item.path.indexOf("adult") !== -1
+        )[0]?.path;
+        const favoritePath = list.filter(
+          item => item.path.indexOf("avorite") !== -1
+        )[0]?.path;
+
+        let source = item.parentPath,
+          target;
+        switch (type) {
+          case "favorite":
+            const isFavorite = this.isFavorite(item);
+            target = isFavorite ? defaultPath : favoritePath;
+            break;
+          case "thumb_up":
+            target = favoritePath;
+            break;
+          case "thumb_down":
+            target = defaultPath;
+            break;
+        }
+
+        await new Promise(resolve => {
+          exec(
+            `powershell.exe -command "Move-Item '${source}' '${target}'`,
+            function(err, stdout, stderr) {
+              if (err) throw new Error(err);
+              resolve();
+              // console.log("err", err);
+              // console.log("stdout", stdout);
+              // console.log("stderr", stderr);
+            }
+          );
+        });
+
+        const movedPath = `${target}\\${item.name}`;
+        const floder = await fs.promises.readdir(movedPath);
+        await Promise.all(
+          floder.map(item => {
+            return new Promise(resolve => {
+              const current = `${movedPath}\\${item}`;
+              const name = item.replace(path.extname(item), "");
+              this.$db.video.update(
+                { name },
+                {
+                  $set: {
+                    path: current
+                  }
+                },
+                {},
+                function(err, numReplaced) {
+                  if (err) throw new Error(err);
+                  resolve();
+                }
+              );
+            });
+          })
+        );
+        const newItem = {
+          ...item,
+          path: `${movedPath}\\${item.name + item.extName}`,
+          parentPath: movedPath
+        };
+        const index = this.tableData.findIndex(
+          item => item.name === newItem.name
+        );
+        this.$set(this.tableData, index, newItem);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        this.loading = false;
       }
     }
   }
