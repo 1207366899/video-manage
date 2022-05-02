@@ -25,7 +25,7 @@
               <img class="cover" :src="item.image" @click="handleClick(item)" />
               <q-card-section class="flex justify-between items-center">
                 <div class="text-h6">{{ item.parentName }}</div>
-                <div class="text-grey" v-show="item.parentSize">
+                <div class="text-grey">
                   <q-btn
                     v-show="!isNew(item)"
                     flat
@@ -50,7 +50,7 @@
                     color="secondary"
                     @click="moveFloder(item, 'thumb_down')"
                   />
-                  {{ (item.parentSize / 1024 / 1024 / 1024).toFixed(2) + "Gb" }}
+                  <!-- {{ (item.parentSize / 1024 / 1024 / 1024).toFixed(2) + "Gb" }} -->
                 </div>
               </q-card-section>
             </q-card>
@@ -110,7 +110,7 @@
 import fs from "fs";
 import path from "path";
 import { exec } from "child_process";
-// import { ipcRenderer } from "electron";
+import { ipcRenderer } from "electron";
 
 export default {
   // name: 'PageName',
@@ -163,7 +163,7 @@ export default {
       if (obj) {
         this.param = {
           ...this.param,
-          parentPath: obj.value
+          parentPath: new RegExp(path.basename(obj.value))
         };
       } else {
         delete this.param.parentPath;
@@ -293,7 +293,7 @@ export default {
       return item.path.indexOf("avorite") !== -1;
     },
     isNew(item) {
-      return item.path.indexOf("new") !== -1;
+      return item.path.indexOf("ew") !== -1;
     },
     async moveFloder(item, type) {
       this.loading = true;
@@ -305,7 +305,7 @@ export default {
           });
         });
         const defaultPath = list.filter(
-          item => item.path.indexOf("adult") !== -1
+          item => item.path.indexOf("dult") !== -1
         )[0]?.path;
         const favoritePath = list.filter(
           item => item.path.indexOf("avorite") !== -1
@@ -325,43 +325,46 @@ export default {
             target = defaultPath;
             break;
         }
+        console.log(source);
+        console.log(target);
 
-        await new Promise(resolve => {
-          exec(
-            `powershell.exe -command "Move-Item '${source}' '${target}'`,
-            function(err, stdout, stderr) {
-              if (err) throw new Error(err);
-              resolve();
-              // console.log("err", err);
-              // console.log("stdout", stdout);
-              // console.log("stderr", stderr);
-            }
-          );
-        });
+        // await new Promise(resolve => {
+        //   exec(
+        //     `powershell.exe -command "Move-Item '${source}' '${target}'`,
+        //     function(err, stdout, stderr) {
+        //       if (err) throw new Error(err);
+        //       resolve();
+        //       // console.log("err", err);
+        //       // console.log("stdout", stdout);
+        //       // console.log("stderr", stderr);
+        //     }
+        //   );
+        // });
+        ipcRenderer.send("scan-file");
 
         const movedPath = `${target}\\${item.name}`;
-        const floder = await fs.promises.readdir(movedPath);
-        await Promise.all(
-          floder.map(item => {
-            return new Promise(resolve => {
-              const current = `${movedPath}\\${item}`;
-              const name = item.replace(path.extname(item), "");
-              this.$db.video.update(
-                { name },
-                {
-                  $set: {
-                    path: current
-                  }
-                },
-                {},
-                function(err, numReplaced) {
-                  if (err) throw new Error(err);
-                  resolve();
-                }
-              );
-            });
-          })
-        );
+        // const floder = await fs.promises.readdir(movedPath);
+        // await Promise.all(
+        //   floder.map(item => {
+        //     return new Promise(resolve => {
+        //       const current = `${movedPath}\\${item}`;
+        //       const name = item.replace(path.extname(item), "");
+        //       this.$db.video.update(
+        //         { name },
+        //         {
+        //           $set: {
+        //             path: current
+        //           }
+        //         },
+        //         {},
+        //         function(err, numReplaced) {
+        //           if (err) throw new Error(err);
+        //           resolve();
+        //         }
+        //       );
+        //     });
+        //   })
+        // );
         const newItem = {
           ...item,
           path: `${movedPath}\\${item.name + item.extName}`,

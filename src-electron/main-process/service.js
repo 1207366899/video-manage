@@ -118,39 +118,39 @@ ipcMain.on("scan-file", async (event, arg) => {
     );
 
     // 更新文件夹大小
-    list = await getAll();
-    const unSizedList = list.filter(
-      item =>
-        (item.extName === ".jpg" || item.extName === ".png") && !item.parentSize
-    );
-    await Promise.all(
-      unSizedList.map(async item => {
-        return new Promise(async resolve => {
-          const parentSize = await new Promise(resolve => {
-            exec(
-              `powershell.exe -command " cd '${item.parentPath}'; Get-ChildItem -Recurse | Measure-Object -Sum Length"`,
-              function(err, stdout, stderr) {
-                if (err) throw new Error(err);
-                const sum = stdout
-                  .replace(/\r\n/g, ":")
-                  .split(":")[7]
-                  .trim();
-                resolve(sum);
-              }
-            );
-          });
-          video.update(
-            { path: item.path },
-            { $set: { parentSize } },
-            {},
-            function(err, numReplaced) {
-              // console.log(numReplaced);
-              resolve();
-            }
-          );
-        });
-      })
-    );
+    // list = await getAll();
+    // const unSizedList = list.filter(
+    //   item =>
+    //     (item.extName === ".jpg" || item.extName === ".png") && !item.parentSize
+    // );
+    // await Promise.all(
+    //   unSizedList.map(async item => {
+    //     return new Promise(async resolve => {
+    //       const parentSize = await new Promise(resolve => {
+    //         exec(
+    //           `powershell.exe -command " cd '${item.parentPath}'; Get-ChildItem -Recurse | Measure-Object -Sum Length"`,
+    //           function(err, stdout, stderr) {
+    //             if (err) throw new Error(err);
+    //             const sum = stdout
+    //               .replace(/\r\n/g, ":")
+    //               .split(":")[7]
+    //               .trim();
+    //             resolve(sum);
+    //           }
+    //         );
+    //       });
+    //       video.update(
+    //         { path: item.path },
+    //         { $set: { parentSize } },
+    //         {},
+    //         function(err, numReplaced) {
+    //           // console.log(numReplaced);
+    //           resolve();
+    //         }
+    //       );
+    //     });
+    //   })
+    // );
 
     event.reply(
       "scan-reply",
